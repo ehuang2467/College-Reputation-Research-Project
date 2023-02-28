@@ -1,0 +1,1008 @@
+---
+title: "Analysis of College Reputation in Relation to Structural Characteristics"
+author: "Eric Huang"
+date: "`r format(Sys.Date(), '%m-%d-%Y')`"
+output:
+  pdf_document: default
+  html_document: default
+header-includes: \usepackage{setspace}\doublespacing
+fontsize: 12pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, 
+                      out.width = "50%", 
+                      warning = F,
+                      fig.width = 4,
+                      fig.height = 4)
+source("code/fxs.R")
+library(gridExtra)
+library(webshot)
+```
+
+### Executive Summary  
+
+We investigate the relationship between structural characteristics of US colleges and their prestige. We find that the most important of the variables that we considered is age, with a higher age being significantly associated with better rankings on a consistent basis. In addition, when considering school type, in which a higher school type denotes awarding higher-level degrees such as doctorates and a lower school type denotes awarding lower-level degrees such as associates, we also find that higher age is significantly associated with better rankings on a consistent basis.  
+
+We find that having a Special Purpose, most notably having HBCU status, seems at first significant and negatively correlated with prestige, but is actually positively correlated with higher prestige after controlling for SAT scores. We find that being religious is a consistent, negative factor for the most prominent colleges. We find that being a public school is significantly associated with being more developed in school type. However, whereas public vs private seems to matter very little for most school rankings, among the very oldest universities, private schools far outrank public schools. These oldest universities also associate small city locales with better ranks above all other locales, contrasting the rest of the schools which favor large cities, then small cities, then rural areas. These oldest universities also ignore the correlations with state population and religious affiliation that the rest of the universities have. We note that while age is significant for school type, it hardly affects the school type for private schools. Finally, we note that a school being at the state capital and a school being off the mainland USA are inconsistent factors to associate with prestige, while state population is moderately consistent.    
+
+### Introduction  
+
+Today, America's most prestigious colleges wield an enormous amount of power and influence. This small subset of schools possess billions in endowment funds, graduate alumni who create billion dollar companies and win Nobel Prizes, and lead the world in cutting-edge research. They are a coveted destination not just for the most ambitious American high schoolers, but also for world leaders and their children.  
+
+Yet these schools were founded from humble beginnings. For example, [Harvard University](https://www.harvard.edu/about/history/timeline) was established in order to educate the clergy, and graduated only nine students during its first commencement ceremony. Its founders would have been hard-pressed to imagine that their schools would become synonymous with prestige and reputation.  
+
+Motivated by these observations, we wish to explore the following: out of the thousands of American colleges, why do some achieve prestige and status, while other do not? Is it random chance, or can we systematically identify structural differences between colleges who reached the top, and those who did not?  
+
+We believe this question to be both intellectually and practically important. 
+
+On an intellectual level, understanding why certain certain institutions have become highly competitive, scarce commodities is crucial to understanding why the current educational landscape is the way that it is.  
+
+On a practical level, if such characteristics can be identified, then perhaps this phenomenon can be recreated. Technology and society is constantly evolving, and there may come a time when the next set of institutions will need to be created. Countries and companies will want to know what matters, to understand the systems of building up soft power, and fight to come out on top. Can you buy your way to the top? Or does it become largely out of your hands after a certain point?  
+
+There has been some literature investigating the most significant factors in educational prestige, such as [Volkwein and Sweitzer 2006](https://link.springer.com/article/10.1007/s11162-005-8883-5), but they have all used factors that we believe act as effects of prestige itself. For example, average SAT score may be a strong predictor of college ranking, but we are fairly certain that prestigious colleges attract more high-performance students. Thus, high SAT scores tell us little about the nature of how the school become so prestigious in the first place. Other examples of factors that likely act as both causes and effects of prestige are faculty pay, research output, graduation rate, post-graduation outcomes, and institutional funding.  
+
+The chart below made by Volkwein and Sweitzer is a good examination of these factors. They propose their concept of how school reputation is created.  
+
+```{r conceptual_model_1, fig.align="center"}
+knitr::include_graphics("notes/conceptual_model_1.png")
+```
+
+Motivated by our reasoning above, we propose an alternate concept. In this new concept, not only do the non-structural factors feed into the outcome, but the outcome also feeds into these factors.  
+
+```{r conceptual_model_2, fig.align="center"}
+knitr::include_graphics("notes/conceptual_model_2.png")
+```
+
+This alternative concept of how school prestige works motivates us to use only structural factors, and not factors such as student outcomes or faculty resources, in order to find evidence of root causes of prestige. Considering factors such as faculty productivity or graduation rate would be similar to trying to predict predict based on an effect of prestige. (One interesting thing to note is that US News College Rankings use these factors in their ranking formula. However, they have historically used opinion surveys of academics. The rankings have changed little since then, and we can view the usage of these factors as a proxy for reputation with a more objective justification with less elitism.)  
+
+We wish to investigate factors that are structural characteristics and are unlikely to have been caused by prestige itself. Thus, these are much stronger evidence for being causal factors of educational prestige.  
+
+If these structural characteristics have little statistical significance, then perhaps universities gain prestige in a random fashion. For example, a certain college might, through chance, welcome in a stronger than average class, which increases their reputation, which attracts a stronger incoming class, and continues to snowball in that fashion.  
+
+We develop some initial hypotheses that we could like to investigate based on casual observation. The most primary is the factor of age. When we examine the highest ranked schools in the country, we notice that many of them were founded in the 1700's. Looking at a [list of the 10 oldest colleges](https://www.topuniversities.com/blog/10-oldest-universities-us), we notice that half of them are prestigious, Ivy League universities.  
+
+Another hypothesis is that a higher state population might provide schools a larger pool of students that apply, thus allowing schools to select the best in a large pool, or perhaps providing the schools with more funding from tuition. Additionally, we hypothesize that public schools would benefit more from a larger state population, as public schools draw from their local state population more than private schools do.  
+
+In addition, I would like to investigate the effects of "mission", as stated by the chart by Volkwein and Sweitzer. Specifically, I hypothesize that having a niche special mission would lower a school's appeal more than a broadly appealing school. For this mission, we look at the characteristics of being a religious school, being a gender-exclusive school, and being a school with a mission and history of serving an ethnic minority group. Perhaps the most relevant of these categories is that of Historically Black Colleges and Universities (HBCU), as they have received close attention in politics in recent years. [In 2019, Senator Warren proposed $50 billion in HBCU funding](https://thehill.com/homenews/campaign/443193-warren-proposes-50-billion-fund-to-invest-in-hbcus/) and [in 2022, President Biden says "HBCUs don’t have the endowments others have, but guess what?  You’re just as smart. You’re just as bright. You’re just as good as any college in America."](https://www.whitehouse.gov/briefing-room/speeches-remarks/2022/11/07/remarks-by-president-biden-at-a-democratic-national-committee-grassroots-rally/) I have not found literature on this either. From glancing at rankings, one can see that there are few HBCUs in the very top ranks, but a formal statistical analysis would be able to compare HBCUs with similar characteristics, as most of them were founded later in American history.  
+
+Another casual observation, since the author grew up in Texas, is the flagship University of Texas at Austin. Is there an advantage at being located at the capital? If so, we might also expect that public schools benefit more from this effect than do private schools.  
+
+In addition, we note that the top of the college rankings is dominated by private schools, so we wish to see the effect of a school's control (i.e whether a school is private or public).  
+
+We wish to investigate whether these factors are associated with greater college reputation, and whether their correlation suggests a positive or negative effect. After identifying such factors, do their correlation suggest a positive or negative effect on reputation, and how large of an effect is it?  
+
+Through this, we would like to gather evidence that certain factors might be causes of college prestige. This would allow social scientists and policymakers to understand why the current college landscape is the way it is currently. It would allow possible applications of these findings to schools in other countries (for example, countries that are starting or have recently started to develop higher education). It would have possible applications for the establishment of new institutions in domains outside of education. For example, if the future comes to a Metaverse race or an AI race, what factors would cause certain institutions to come out on top? Could the findings presented here be used to get ahead?  
+
+In addition to rankings and reputation, we can general think of college classification as a kind of outcome of success as well. That is, are there factors that can be used to predict whether a school will end up as a doctorate-granting research university, or a school that primarily gives out bachelor's degrees, or a community college?
+
+
+### Datasets  
+
+The first dataset we use is the [US News College Ranking 2022-2023](https://www.usnews.com/best-colleges) (note that around September 2023, this link will direct to the US News College Ranking 2023-2024, and so on every year). This is the most popular rankings list of colleges and universities. The college rankings are divided into multiple categories. There are National Universities (research universities) and Liberal Arts Colleges, which are the two most prominent lists. There are also Regional Universities and Regional Colleges for the four regions of North, South, Midwest, and West. We only use these ten datasets for this analysis, although there are other lists on the website, such as Best Value Schools, Top Law Schools, and Best Colleges for Veterans.  
+
+We collect the data from the US News Ranking using the RSelenium package in R. From the US News Rankings, we extract, for each school, the college rankings (as ranked by US News), the founding date, and a unique numeric ID from hidden metadata. Around 191 schools had missing founding dates on the US News Ranking website, so these founding dates were searched for using Google. The unique numeric ID is the Integrated Postsecondary Education Data System’s (IPEDS) Unit ID. For schools ranked in the bottom quarter, US News publishes a range instead of exact ranks. Schools with a range instead of an exact rank are assigned the rank that is the average of this range (e.g. if a school’s rank is the range 300-400, their rank would be converted to 350). In total, there are 1631 schools in all datasets.  
+
+We present each US News list an overview of the data, with a selection of schools at different rankings and counts for the ranked and unranked schools. Note that "75th percentile" corresponds with the school ranked above 75% of schools in its respective dataset, and "50th percentile" corresponds with the school ranked above 50% of schools in its respective dataset.  
+
+```{r usnews_data_overview, echo=F, screenshot.alt="webshot/usnews_data_overview.jpg"}
+
+suppressWarnings(library(DT))
+print_school_list_table = function(tib){
+  dom_opt = ifelse(nrow(tib) > 10, "tp", "t")
+  datatable(tib, 
+          extensions = "FixedColumns",
+          options = list(dom = dom_opt,
+                         scrollX = T,
+                         fixedColumns = list(leftColumns = 1)),
+          rownames = F)
+}
+
+usnews_overview = 
+  get_all_usnews %>% 
+  mutate(n = map_dbl(school_data, ~.x %>% filter(!is.na(Rank_num)) %>% nrow()),
+         n_un =  map_dbl(school_data, ~.x %>% filter(is.na(Rank_num)) %>% nrow()),
+         "top ranked" = map_chr(school_data, ~.x[1,] %>% pull(School)),
+         "75th percentile" = map2_chr(school_data, n,  ~.x[floor(.y*3/4),] %>% pull(School)),
+         "50th percentile" = map2_chr(school_data, n,  ~.x[floor(.y/2),] %>% pull(School))
+         ) %>% 
+  select(-school_data) %>% 
+  rename("n (ranked)" = n, "n (unranked)" = n_un)
+
+usnews_overview %>% print_school_list_table()
+```
+
+The second dataset we use is the U.S. Department of Education College Scorecard from 2022. This is a dataset compiled by the US government on institutional characteristics, enrollment, student aid, costs, and student outcomes, with the purpose of aiding students in making financial decisions about college. From this dataset, we extract, for each school, the state the school is located in, control type (i.e. public, private, or for profit), Carnegie Classification (e.g. Doctoral, Master's, Baccalaureate, or Associate's), locale (e.g. city with population of 250,000 or more, suburb outside city with population between 100,000 and 250,000), HBCU and tribal status, religious affiliation, latitude/longitude, and IPEDS Unit ID.  
+
+The third dataset we use is the [US State Demographics csv](https://corgis-edu.github.io/corgis/csv/state_demographics/), compiled by Whitcomb, Choi, and Guan of the CORGIS Dataset Project, using data collected by the US Census. From this dataset, we extract, for each state, total population, and population for the ethnicities White, Black, American Indian and Alaska Native, Asian, Native Hawaiian and Other Pacific Islander, Two or More Races, and Hispanic.  
+
+The fourth dataset we use is the [US State Capitals csv](https://github.com/jasperdebie/VisInfo/blob/master/us-state-capitals.csv), compiled by Jochen. From this dataset, for each state, we extract the latitude/longitude coordinates of the state capital. We then manually added capital information for US territories (e.g. Puerto Rico and the Virgin Islands).  
+
+We join together the US News dataset and the Government Scorecard dataset using the IPEDS Unit ID. We join the State Demographics and State Capitals datasets to this dataset using the state that the schools are located in.  
+
+One of our assumptions about the data is that the change in real prestige as rank changes is higher for better ranked schools than it is for lower ranked schools. For example, the difference in reputation between the rank #1 and rank #30 schools is larger than the difference in reputation between the rank #301 and rank #330 schools. To encode this assumption, we will use the log of the rank in our visualizations below, because the change in log(x) for large values of x is smaller than for small values of x.  
+
+Because there are very few observations of For_profit control, and because this lack of observations complicates the Hessian matrix of when fitting future models, we change all instances of For_profit to Private. Each dataset has relatively very few instances of For_profit.  
+
+The three levels of variable Locale are Large City, Small City, and Rural/Town. Large City corresponds to being inside or in the suburbs of a city with a population of 250,000 or more. Small City corresponds to being inside or in the suburbs of a city with a population of less than 250,000. Rural/Town corresponds with being in a rural area or being in an urban cluster separated from an urbanized area.  
+
+Special Purpose is a true or false variable. Special Purpose is true if a school is a Historically Black College or University (HBCU), a men's only college, a women's only college, or a tribal college.  
+
+Off Mainland is a true or false variable. Off Mainland is true if a school is located off the mainland of the United States, which would be in the states of Alaska and Hawaii, as well as Puerto Rico and other U.S. territories.  
+
+At Capital is a true or false variable. At Capital is true if the school's coordinates put it within 15 miles of the coordinates of the state capital (note that for schools in Washington, DC, DC itself acts as the capital).  
+
+The population variable is the population of the state that the school is located in. It has been divided by one million for easier interpretation of coefficients. We hypothesize that, since there are drastic differences between some states in population, the square root of the population might be a more effective variable. Our reasoning is that it gives a more qualitative look at the differences in population, as the differences will be less drastic between states like California (39 million) and Rhode Island (1 million).  
+```{r sqrt_pop_validation}
+library(boot)
+pop_model = glm(log_rank ~ Age + Control + pop + SpecialPurpose + Locale + OffMainland + is_religious + at_capital,
+               data = get_usnews("national"),
+               family = "gaussian")
+sqrt_pop_model = glm(log_rank ~ Age + Control + sqrt_pop + SpecialPurpose + Locale + OffMainland + is_religious + at_capital, 
+                     data = get_usnews("national"),
+                     family = "gaussian")
+pop_CV_error = cv.glm(get_usnews("national") %>% filter(!is.na(log_rank)),
+                      pop_model, K = 10)[["delta"]][2]
+sqrt_pop_CV_error = cv.glm(get_usnews("national") %>% filter(!is.na(log_rank)), 
+                           sqrt_pop_model, K = 10)[["delta"]][2]
+```  
+
+Using 10-fold cross validation on a linear model on the national dataset between a model using population and a model using the square root of population, we find that the population model has an average mean squared error of `r pop_CV_error %>% round(4)` and the square root population model has an average mean squared error of `r sqrt_pop_CV_error %>% round(4)`. We thus opt to use the raw population.  
+
+We create visualizations to gain an understanding of the patterns in the data. Note that these are only for the National University dataset, and that although the data points are along the y-axis have their position decided by the log of the rank, the y-axis label is the untransformed rank, for easy readability.  
+
+```{r variables_vis, out.width="32%", fig.width=4, fig.height=4}
+nat = get_usnews("national") %>% filter(!is.na(Rank_num))
+
+for(v in vars){
+  ggplot_nat = ggplot(nat, 
+                      aes(nat %>% pull(v), log_rank), 
+                      stat = "count") +
+    labs(subtitle = "Dataset: US News National University Ranking",
+         x = v, y = "log Rank")
+  scale_exp_seq = c(1, seq(20, 100, 20), seq(150, 400, 50))
+  scale_exp = scale_y_continuous(name = "Rank", 
+                                 breaks = log(scale_exp_seq),
+                                 labels = scale_exp_seq)
+  if(var_is_categorical[vars == v]){
+    graph = ggplot_nat + geom_boxplot() + 
+      scale_exp
+    print(graph)
+      
+  }
+  else{
+    graph = ggplot_nat + geom_point() + 
+      scale_exp
+    print(graph)
+  }
+}
+```  
+
+
+### Models and Analysis    
+
+We first fit a linear regression on log rank for each dataset. For our base model, our response is the log rank, and our variables are Age, Control, pop, SpecialPurpose, Locale, OffMainland, is_religious, and at_capital. The table of coefficients and p-values is below. (Note that for this table only, a negative coefficient for a variable means that an increase in the variable corresponds with a better rank. For all other coefficient tables, a positive coefficient for a variable means that an increase in the variable corresponds with a better rank.)
+
+```{r lm_coefs, screenshot.alt="webshot/lm_coefs.jpg"}
+commandArgs = function(trailingOnly=T) c("print_coef", "lm")
+a = source("code/coef.R")[[1]]
+
+a %>% print_school_list_table()
+```  
+
+We also fit a cumulative link model regression on each dataset. A cumulative link model is a regression for ordered, categorical response variables. In this model, the log odds probability of being less than or equal to a certain category is modeled as a linear function of the variables. Each category has a unique intercept that either increases or decreases monotonically as you move up or down the categories. The model is shown below, where k is one of the outcome categories.   
+
+$$\log \frac{P(Y_i \le k)}{1-P(Y_i \le k)} = \beta_{k, 0} + \beta_{1} X_{i,1} + \beta_{2} X_{i,2} + \ldots $$  
+
+The simple model makes the assumption that the effect of the covariates on the log odds are the same for each category. This uniform effect of the covariates and the monotonic change in intercept ensures logical interpretations of the probabilities. As we move towards better ranked categories, our probability of being better than or equal to that category must decrease (e.g. the probability of of a school being ranked better than or equal to #50 is greater than the probability of of a school being ranked better than or equal to #40). The parameters of the model are fitted using maximum likelihood. The models are implemented through the [R package “ordinal”](https://cran.r-project.org/web/packages/ordinal/vignettes/clm_article.pdf).  
+
+Our usage of the clm model is motivated by the fact that the linear regression model has the assumption that the output is a real number. When we use raw ranks as the output, we can get fitted values/predictions of ranks in the negatives, and when we use log ranks as the output, we can get fitted values/predictions numerically higher than the number of schools in the dataset. Additionally, numeric outputs come with the interpretation that rank #20 is “twice as much” as rank #10 (or in the case of log ranks, rank #27 is “twice as much” as rank #10).  
+
+In order to turn our ranks into an effective categorical variable, I implement a custom ordered factor maker function. It takes as input ranks from 1 to n, as well as a positive integer “interval” (let us assume “interval” is its default value, 10). Categories are made starting from the best rank. The first category has a range of “interval”, so all schools ranked #1-10 are in this interval. The second category has a range of 2 times “interval”, so all schools ranked #11-30 are in this interval, and so on. Like the log ranks, this encodes our assumption that the real difference in prestige decreases as ranks decrease.  
+
+To illustrate the probabilities distributions that the cumulative link model gives as a variable changes, consider the graph below. It shows the probability distribution of being in a certain rank range as Age increases for a dummy school. We can see that the probability of being in a better ranked category increase as age increases, and decrease as age decreases, and vice versa for worse ranked categories.  
+
+```{r clm_demonstration, out.width="50%"}
+nat_clm = get_usnews("national") %>% 
+  make_clm(y_var, vars)
+
+age_x = seq(50, 300, by = 10)
+
+test_data = tibble(Age = age_x, 
+                   Control = "Private",
+                   pop = (10),
+                   SpecialPurpose = F,
+                   Locale = "Large_City",
+                   OffMainland = F,
+                   is_religious = F,
+                   at_capital=F)
+
+
+#create plot of probabilities of each group for clm
+#This illustrates the CLM probabilites
+graph =
+  predict(nat_clm, newdata = test_data, type = "prob") %>% 
+  .[["fit"]] %>% 
+  cbind(age_x) %>% 
+  as_tibble() %>% 
+  pivot_longer(cols = -ncol(.), names_to = "fac", values_to = "prob") %>% 
+  mutate(fac_min = fac %>% 
+           str_extract("\\(.*,") %>% 
+           str_extract("[:digit:]+") %>% 
+           as.numeric() %>% 
+           factor()) %>% 
+  arrange(fac_min) %>% 
+  ggplot(aes(x = age_x, y = prob, color = fac_min)) + 
+  geom_smooth(method = "loess", formula = "y~x")
+
+print(graph)
+``` 
+
+We show our coefficients and p-values below, removing variables if a dataset has insufficient counts for a good Hessian matrix for model fitting.    
+
+```{r clm_coefs, screenshot.alt="webshot/clm_coefs.jpg"}
+commandArgs = function(trailingOnly=T) c("print_coef", "clm")
+a = source("code/coef.R")[[1]]
+a %>% print_school_list_table()
+```  
+
+ 
+We seek to test if the cumulative linked model has any objective advantages over the linear regression model. To do so, we split each dataset into an 80-20 training/testing split, then compare the predictions with the observations, and find the error rate across all data sets. The predictions of the linear regression model are “rounded” to their nearest categorical counterpart.  
+
+```{r model_validation}
+model_validation = function(){
+  test_prop = .2
+train_prop = 1-test_prop
+
+usnews_data_comp = get_all_usnews %>% 
+  mutate(train_index = 
+           map(school_data, 
+                   ~sample((1:nrow(.x)), 
+                           size = (nrow(.x)*train_prop) %>% floor())),
+         test_index = map2(school_data, train_index,
+                           ~discard(1:nrow(.x), function(z) z %in% .y)))
+  
+usnews_data_comp = usnews_data_comp %>% 
+  mutate(clm = map2(school_data, train_index,
+                    ~make_clm(.x[.y,], "Rank_fac", vars, no_print = T)),
+         lm = map2(school_data, train_index, 
+                   ~lm(model_formula_lm, data = .x[.y,])))
+
+usnews_data_comp = usnews_data_comp %>% 
+  mutate(data2 = map2(school_data, clm, add_clm_res),
+         data2 = map2(data2, lm, ~add_predictions(.x, .y, var = "lm_pred")))
+
+
+#converts raw ranks to factor ranks, based on the factors in variable "pred"
+#if log = T, then numeric ranks are in log, and we reverse the log first
+lmpred_to_facpred = function(data, log = T){
+  lm_pred = data %>% pull("lm_pred")
+  fac_pred = data %>% pull("pred")
+  breaks = fac_pred %>% 
+    na.omit() %>%
+    unique() %>% 
+    str_split(",") %>% 
+    unlist() %>% 
+    str_remove_all("[:punct:]|[:alpha:]") %>% 
+    unique() %>% 
+    as.numeric() %>% 
+    sort()
+  lm_pred[lm_pred < min(breaks)] = 1
+  lm_pred[lm_pred > max(breaks)] = max(breaks)
+  lm_pred_vec = cut(lm_pred, breaks = breaks)
+  return_data = data %>% 
+    mutate("lm_pred_fac" = lm_pred_vec)
+  return(return_data)
+}
+
+usnews_data_comp = usnews_data_comp %>% 
+  mutate(data2 = map2(data2, clm, 
+                     ~.x %>% 
+                       mutate(lm_pred = exp(lm_pred)) %>% 
+                       lmpred_to_facpred() %>% 
+                       mutate(lm_resid = fac_diff(lm_pred_fac, 
+                                                  Rank_fac, 
+                                                  .y["y.levels"] %>% .[[1]]))))
+
+  
+get_resids = function(big_tibble, type){
+  if(type == "clm"){
+    return(big_tibble %>% 
+             pull(data2) %>% 
+             map(~pull(.x, resid)) %>% 
+             unlist())
+  }
+  else if (type == "lm"){
+    return(big_tibble %>% 
+             pull(data2) %>% 
+             map(~pull(.x, lm_resid)) %>% 
+             unlist())
+  }
+}
+
+#0, 1 error
+#clm
+classif_error_clm = 
+  usnews_data_comp %>% 
+  get_resids("clm") %>% 
+  map_dbl(~ifelse(.x == 0, 0, 1)) %>% 
+  mean(na.rm = T)
+#lm
+classif_error_lm = 
+  usnews_data_comp %>% 
+  get_resids("lm") %>% 
+  map_dbl(~ifelse(.x == 0, 0, 1)) %>% 
+  mean(na.rm = T)
+
+#mean resid error
+#clm
+avg_error_clm = 
+  usnews_data_comp %>% 
+  get_resids("clm") %>% 
+  abs() %>% 
+  mean(na.rm = T)
+#lm
+avg_error_lm = 
+  usnews_data_comp %>% 
+  get_resids("lm") %>% 
+  abs() %>% 
+  mean(na.rm = T)
+
+#mean square resid error
+#clm
+avg_sq_error_clm = 
+  usnews_data_comp %>% 
+  get_resids("clm") %>% 
+  magrittr::raise_to_power(2) %>% 
+  mean(na.rm = T)
+#lm
+avg_sq_error_lm = 
+  usnews_data_comp %>% 
+  get_resids("lm") %>% 
+  magrittr::raise_to_power(2) %>% 
+  mean(na.rm = T)
+return(list(class_clm = classif_error_clm,
+            class_lm = classif_error_lm,
+            error_clm = avg_error_clm,
+            error_lm = avg_error_lm))
+}
+
+n_validation = 1
+valid_errors = as_tibble(model_validation())
+for(i in 1:n_validation){
+  valid_errors = valid_errors %>% bind_rows(model_validation())
+}
+class_clm = valid_errors %>% pull(class_clm) %>% mean()
+class_lm = valid_errors %>% pull(class_lm) %>% mean()
+error_clm = valid_errors %>% pull(error_clm) %>% mean()
+error_lm = valid_errors %>% pull(error_lm) %>% mean()
+```   
+
+The cumulative link model had a `r class_clm` error rate, while the linear regression model had a `r class_lm` error rate. We define the “residual” of a categorical ranking prediction as the number of steps it takes to arrive at the correct category in order. The cumulative link model had a `r error_clm` absolute mean residual and 2.660655 mean squared residual, while the linear regression model had a `r error_lm` absolute mean residual and 2.188377 mean squared residual.  
+
+In the comparison of the two models, since the clm made moderately less mistakes than the linear model, and the linear model made moderately smaller mistakes than the clm, we conclude that the two are roughly equally viable for use. We choose to favor the cumulative link model for its better fit to the data type of the response. 
+
+We consider not only school rank, which can be viewed as the social standing of a school, but also school classification, which can be viewed as the capabilities of the school. We consider a simplified version of the Carnegie Classification, which classifies schools based upon their highest degree awarded. We also consider the US News classification, which is based on the Carnegie Classification, and which US News Report uses to categorize schools into rankings lists.  
+
+The Carnegie Classification has levels such as “R1: Doctoral Universities – Very high research activity”, “M3: Master's Colleges and Universities – Smaller programs”, and “Associate's Colleges - High Transfer-High Traditional”. The full list can be found [here](https://carnegieclassifications.acenet.edu/classification_descriptions/basic.php). We simplify these categories into an ordered factor with four categories. They are, in order from best ranked to worst ranked: Doctoral, Master, Bachelor, and Associate. We then combine all US News datasets, and run a cumulative link model on this as a response, with the variables that we used before.  
+
+Our results are as follows:  
+
+```{r type_model_coef}
+type_model = make_clm(all_us_combined, "Type", vars)
+
+type_model %>% summary() %>% print()
+```  
+
+Next, we create a model for the US News classification. The four regions for Regional Universities and Regional Colleges are consolidated into their respective categories. Our response, listed from best ranked to worse ranked, is the ordered factor consisting of the levels National, Liberal, Regional University, Regional College. This ordering is similar to that of the Carnegie Classification above: National corresponds to Doctoral, Regional University corresponds to Master, and Regional College corresponds to Bachelor and Associate. This information can be found in the [US News College Rankings methodlogy](https://www.usnews.com/education/best-colleges/articles/how-us-news-calculated-the-rankings).  
+
+An exception is the more subjective ordering of Liberal, which corresponds to the Carnegie Classification “Baccalaureate Colleges: Arts & Sciences Focus”. This ordering is motivated by the author’s understanding of the national prominence of each category. We believe that it is very likely that this is the same ordering of the number of views each ranking receives by prospective students, as well as the general excitement and interest each category generates upon update each year. It is thus a measure of social prestige. The results of our cumulative link model are shown below.  
+
+```{r usnews_type_model_coef}
+usnews_type_model = make_clm(all_us_combined, "usnews_type", vars)
+
+usnews_type_model %>% summary() %>% print()
+```  
+
+<!-- We test for polynomial effects.  -->
+<!-- ```{r polynomial_testing} -->
+<!-- # nat_no_poly_model = make_clm(get_usnews("national"), y_var, vars) -->
+<!-- #  -->
+<!-- # age_poly_model = make_clm(get_usnews("national"), -->
+<!-- #                           y_var, -->
+<!-- #                           vars %>% c(., "I(Age^2)")) -->
+<!-- #  -->
+<!-- # pop_poly_model = make_clm(get_usnews("national"), -->
+<!-- #                           y_var, -->
+<!-- #                           vars %>% c(., "I(pop^2)")) -->
+<!-- #    -->
+<!-- # anova(nat_no_poly_model, age_poly_model) %>% print() -->
+<!-- #  -->
+<!-- # anova(nat_no_poly_model, pop_poly_model) %>% print() -->
+<!-- commandArgs = function(trailingOnly=T) c("print_coef", "clm", "add=I(Age^2)") -->
+<!-- a = source("code/coef.R")[[1]] -->
+<!-- a %>% print_school_list_table() -->
+
+<!-- commandArgs = function(trailingOnly=T) c("print_coef", "clm", "add=I(pop^2)") -->
+<!-- a = source("code/coef.R")[[1]] -->
+<!-- a %>% print_school_list_table() -->
+<!-- ```   -->
+
+<!-- We find that polynomial effects are not significant.   --> 
+
+
+#### Control in Rankings vs School Type  
+
+Yet for the Carnegie Classification model, this Control=Public is significant and positively correlated with a higher level classification. This is an unexpected reversal of the effect of Control = Public. 
+
+We examine the reasons why this occurs.  
+
+We examine the link between Control and Carnegie Classification type in the combined data set. We can see in the first plot that Public schools have a higher proportion of Doctoral schools, a similar proportion of Master schools, and a lower proportion of Master schools than Private schools. One can hypothesize that Public schools are more likely to receive significant government funding for research activities, or that many private individuals/organizations use limited resources to create small-scale Bachelor schools.  
+
+```{r Control_Type_vis}
+all_us_combined %>% 
+  count(Control, Type)
+  
+type_public = all_us_combined %>% 
+  filter(Control == "Public") %>% 
+  count(Type) %>% 
+  mutate(Type_prop = n/sum(n)) %>% 
+  ggplot(aes(Type, Type_prop)) +
+  geom_col() + 
+  labs(subtitle = "Control: Public") + 
+  ylim(0, .4)
+
+print(type_public)
+
+type_private = all_us_combined %>% 
+  filter(Control == "Private") %>% 
+  count(Type) %>% 
+  mutate(Type_prop = n/sum(n)) %>% 
+  ggplot(aes(Type, Type_prop)) +
+  geom_col() + 
+  labs(subtitle = "Control: Private") + 
+  ylim(0, .4)
+
+print(type_private)
+```
+
+#### Special Purpose Analysis  
+
+We would like to analyze the variable SpecialPurpose more closely. We notice that SpecialPurpose has a very consistent and significant negative correlation with rank. Note that when we say a variable is "negatively correlated" with rank or has a "negative effect" on rank, we mean that a higher value or a True value of the variable is correlated with worse ranks, and vice versa for the terms "positively correlated" and "positive effect". As mentioned earlier, SpecialPurpose is True if the school is an HBCU, or tribal college, or men’s only or women’s only college. The counts are as follows.  
+```{r SP_counts}
+ones_count = function(x) (x == "1") %>% sum(na.rm = T)
+get_all_usnews %>% 
+  mutate(HBCU_n = map_dbl(school_data, ~.x %>% pull(HBCU) %>% ones_count()),
+         Womens_n = map_dbl(school_data, ~.x %>% pull(WOMENONLY) %>% ones_count()),
+         Mens_n = map_dbl(school_data, ~.x %>% pull(MENONLY) %>% ones_count()),
+         Tribal_n = map_dbl(school_data, ~.x %>% pull(TRIBAL) %>% ones_count())
+         ) %>% 
+  select(-school_data)
+```  
+
+We know from [SAT demographic information]([CollegeBoard](https://satsuite.collegeboard.org/media/pdf/sat-percentile-ranks-gender-race-ethnicity.pdf)) that African American students have lower average test scores. Thus, we would like to investigate whether the significance and negative effect of SpecialPurpose is simply due to HBCU being a proxy for lower SAT scores.  
+
+We see that the SpecialPurpose=True subset has a significantly lower average SAT score than the non-Special Purpose subset, with HBCU schools having significantly lower average SAT scores, and gender exclusive schools having similar average SAT scores compared to non-Special Purpose schools. This matches the general demographic patterns reported by Collegeboard.  
+
+```{r SP_vs_SAT_vis}
+missing_sat_n = all_us_combined %>% 
+  filter(is.na(SAT)) %>% 
+  nrow()
+all_us_combined %>% 
+  filter(!is.na(SAT)) %>% 
+  ggplot(aes(SpecialPurpose, SAT)) +
+  geom_boxplot() +
+  labs(subtitle = 
+         str_c("Dataset: all US News combined \n", 
+               missing_sat_n, " missing scores"))
+
+SP_data = 
+  all_us_combined %>% 
+  filter(!is.na(SAT)) %>% 
+  mutate(SP = ifelse(HBCU == "1", 
+                     "HBCU",
+                     ifelse(WOMENONLY == "1", 
+                            "Women's Only", 
+                            ifelse(MENONLY == "1", "Men's Only",
+                                   ifelse(TRIBAL == "1", 
+                                          "TRIBAL",
+                                          "None")))))
+SP_label = 
+  SP_data %>%
+  group_by(SP) %>%
+  filter(row_number(desc(SP)) == 1)
+
+sat_count = function(y){
+  data.frame(label = str_c("n = ", length(y)), y = 500)
+}
+
+SP_data %>%  
+  ggplot(aes(SP, SAT)) +
+  geom_boxplot() +
+  labs(subtitle = 
+         str_c("Dataset: all US News combined \n", 
+               missing_sat_n, " missing scores")) +
+  stat_summary(fun.data = sat_count, geom = "text",
+               position = position_dodge(width = 0.75))
+```  
+
+We now run the cumulative link model on rank again, this time controlling for SAT score. Normally we would like to see whether factors associated with prestige, which is tightly linked with student academic preparedness (SAT scores). However, since we introduce SAT scores into the model, the goal of this particular model is no longer to predict and find correlation between root factors and school prestige. We now simply wish to see whether SpecialPurpose is still significant or still has a negative association with rank, even after controlling for the fact that they have lower average SAT scores.  
+
+```{r sat_coefs}
+commandArgs = function(trailingOnly=T) c("print_coef", "clm", "add=SAT_scaled")
+a = source("code/coef.R")[[1]]
+a %>% print_school_list_table()
+# all_us_combined %>% 
+#   make_clm("Type", (vars, "SAT_scaled")) %>% 
+#   summary()
+# all_us_combined %>% 
+#   make_clm("usnews_type", (vars, "SAT_scaled")) %>% 
+#   summary()
+```  
+
+We see that for every dataset in which there are sufficient counts for both SAT and SpecialPurpose, the correlation of SpecialPurpose has reversed. We find that, controlling for SAT score, SpecialPurpose's correlation implies that it has a positive effect on rank.    
+
+Notably, we find that for National University, Regional College South, Regional University South, Regional University West, and Regional University Midwest, Age is still significant and positively correlated, even after controlling for SAT score. This means that even controlling for the fact that older schools might attract students with higher academic ability, older schools still have an advantage over younger ones.  
+
+#### Age/Control Interaction Analysis
+
+One possible interaction we would like to investigate is interaction between Age and Control. Specifically, we hypothesize that private colleges receive a greater benefit from an older Age than public colleges do. We fit the base model with Age/Control interaction on all datasets.  
+
+```{r Age_Control_interaction}
+commandArgs = function(trailingOnly=T) c("print_coef", "clm", "add=Age:Control")
+age_control_table = source("code/coef.R")[[1]]
+age_control_table %>% print_school_list_table()
+```  
+
+We find that Age/Control interaction is significant for National University, Liberal Arts, Regional College Midwest, and is close to our significance cutoff for Regional University West.  
+
+We see that the general pattern is what we hypothesized: Public schools reap less benefit from a higher Age than Private schools do. However, we see that after accounting for the interaction between Age and Control, the effect of Control is flipped. Whereas before, Control=Public had a negative effect on rank, it now has a positive effect. (Except for Regional University West, where the Control=Public coefficient already had a positive effect, but it doubled in magnitude). So, for National Universities, initially Public schools are stronger, but Private schools overtake them in 85 years in the model.  
+
+The Liberal Arts dataset, however, has a total reversal of this trend. The regression coefficients imply that Public schools reap larger benefits from older Age, but the effect of Control=Public stays negative, as it was before the interaction was added. One thing to note, however, is that the effect of Control=Public has tripled in magnitude. So, for Liberal Arts, initially Private schools are stronger, but Public schools overtake them in 175 in the model.  
+
+We illustrate the difference with and without interaction for the National Universities dataset. The plot below shows the Private vs Public model without interaction. The Private schools have higher predicted probabilities for the higher ranks and lower predicted probabilities for the lower ranks at every level of Age.  
+
+```{r Age_Control_probs}
+library(gridExtra)
+nat_clm = make_clm(get_usnews("national"), 
+                              y_var,
+                              vars)
+
+nat_clm_AgeControl = make_clm(get_usnews("national"), 
+                              y_var,
+                              vars %>% c(., "Age:Control"))
+age_x = seq(0, 350, by = 10)
+test_data_private = tibble(Age = age_x, 
+                   Control = "Private",
+                   pop = (10),
+                   SpecialPurpose = F,
+                   Locale = "Large_City",
+                   OffMainland = F,
+                   is_religious = F,
+                   at_capital=F)
+test_data_public = tibble(Age = age_x, 
+                           Control = "Public",
+                           pop = (10),
+                           SpecialPurpose = F,
+                           Locale = "Large_City",
+                           OffMainland = F,
+                           is_religious = F,
+                           at_capital=F)
+
+#This illustrates Public vs Private probs on no-interaction model, Nat
+priv_no_interact = predict(nat_clm, newdata = test_data_private, type = "prob") %>% 
+  .[["fit"]] %>% 
+  cbind(age_x) %>% 
+  as_tibble() %>% 
+  pivot_longer(cols = -ncol(.), names_to = "fac", values_to = "prob") %>% 
+  mutate(fac_min = fac %>% 
+           str_extract("\\(.*,") %>% 
+           str_extract("[:digit:]+") %>% 
+           as.numeric() %>% 
+           factor()) %>% 
+  arrange(fac_min) %>% 
+  ggplot(aes(x = age_x, y = prob, color = fac_min)) + 
+  geom_smooth(method = "loess", formula = "y~x") +
+  ylim(0, .8) +
+  labs(subtitle = "Private, no Interaction")
+
+print(priv_no_interact)
+
+pub_no_interact = predict(nat_clm, newdata = test_data_public, type = "prob") %>% 
+  .[["fit"]] %>% 
+  cbind(age_x) %>% 
+  as_tibble() %>% 
+  pivot_longer(cols = -ncol(.), names_to = "fac", values_to = "prob") %>% 
+  mutate(fac_min = fac %>% 
+           str_extract("\\(.*,") %>% 
+           str_extract("[:digit:]+") %>% 
+           as.numeric() %>% 
+           factor()) %>% 
+  arrange(fac_min) %>% 
+  ggplot(aes(x = age_x, y = prob, color = fac_min)) + 
+  geom_smooth(method = "loess", formula = "y~x") +
+  ylim(0, .8) +
+  labs(subtitle = "Public, no Interaction")
+
+print(pub_no_interact)
+
+#This illustrates Public vs Private probs on 
+#Age:Control interaction model, Nat
+priv_age_control = 
+  predict(nat_clm_AgeControl, newdata = test_data_private, type = "prob") %>% 
+  .[["fit"]] %>% 
+  cbind(age_x) %>% 
+  as_tibble() %>% 
+  pivot_longer(cols = -ncol(.), names_to = "fac", values_to = "prob") %>% 
+  mutate(fac_min = fac %>% 
+           str_extract("\\(.*,") %>% 
+           str_extract("[:digit:]+") %>% 
+           as.numeric() %>% 
+           factor()) %>% 
+  arrange(fac_min) %>% 
+  ggplot(aes(x = age_x, y = prob, color = fac_min)) + 
+  geom_smooth(method = "loess", formula = "y~x") +
+  ylim(0, .8) +
+  labs(subtitle = "Private with Age/Control Interaction")
+
+print(priv_age_control)
+
+pub_age_control = 
+  predict(nat_clm_AgeControl, newdata = test_data_public, type = "prob") %>% 
+  .[["fit"]] %>% 
+  cbind(age_x) %>% 
+  as_tibble() %>% 
+  pivot_longer(cols = -ncol(.), names_to = "fac", values_to = "prob") %>% 
+  mutate(fac_min = fac %>% 
+           str_extract("\\(.*,") %>% 
+           str_extract("[:digit:]+") %>% 
+           as.numeric() %>% 
+           factor()) %>% 
+  arrange(fac_min) %>% 
+  ggplot(aes(x = age_x, y = prob, color = fac_min)) + 
+  geom_smooth(method = "loess", formula = "y~x") +
+  ylim(0, .8) +
+  labs(subtitle = "Public with Age/Control Interaction")
+
+print(pub_age_control)
+```
+
+Perhaps this relationship only exists because of the influence of extremely old, Private, very well-ranked schools, such as Harvard and Princeton. However, we find that this relationship still holds even when not considering the extremely old schools in the dataset.  
+
+```{r Age_Control_only_young}
+#This model shows that the trend of Public -> positive effect
+#Public:Age -> Public lowers the positive effect of Age
+#still holds even not considered the old schools
+make_clm(get_usnews("national") %>% filter(Age < 200), 
+         y_var,
+         vars %>% c(., "Age:Control")) %>% 
+  summary()
+```  
+
+When testing the Type and US News Type datasets for Age/Control interaction, we find something surprising.  
+
+Previously, we found that both Age and Control=Public were significant and had positive correlations with Type. We now find that the effect of Age for Private schools ceases to be significant, with an estimated coefficient close to zero. Instead, Public schools start off as more likely to be a lower-level Type, but they overtake Private schools after 82 years.  
+
+We try to create an interpretation for these results. The small coefficient of Age for Private schools could be interpreted as Private schools don’t “accumulate” and build up towards Doctoral level status, or that the level of recent Private schools is similar to the levels of older Private schools. If older Private schools do “accumulate” or develop, then newer Private schools are somehow better equipped and getting to that level in a much shorter time. The first interpretation seems more likely, because Public schools overtake their chance of being a higher-level type fairly soon, so it is less likely that the Type levels of old Private schools are extremely high. In addition, a possible interpretation for the Age coefficient of Public schools is that Public schools do “accumulate”, and that perhaps government bodies build upon their oldest and existing schools to create schools with strong research and education capabilities.  
+
+We can see a rough visualization of this phenomenon below (of course, this fit line of graph makes the simplifying assumption that the distance between each category is equal).  
+
+```{r Age_Control_interaction_type_vis}
+graph = 
+  all_us_combined %>% 
+  ggplot(aes(Age, Type, color = Control, group = Control)) +
+  geom_jitter(height = .3) +
+  geom_smooth(method = "lm", formula = "y~poly(x, 1)")
+print(graph)
+
+graph = 
+  all_us_combined %>% 
+  ggplot(aes(Age, Type, color = Control)) +
+  geom_boxplot()
+print(graph)
+
+graph = 
+  all_us_combined %>% 
+  ggplot(aes(Age, usnews_type, color = Control, group = Control)) +
+  geom_jitter(height = .3) +
+  geom_smooth(method = "lm", formula = "y~poly(x, 1)")
+print(graph)
+
+graph = 
+  all_us_combined %>% 
+  ggplot(aes(Age, usnews_type, color = Control)) +
+  geom_boxplot()
+print(graph)
+```
+
+We notice that the majority of Associate schools are young, Public schools. Perhaps the interpretation for this currently is that as Age gets younger, Public is worse due to the influence of young, public Associate schools. We run the regression without Associate schools to see if this interaction between Age and Control still holds.  
+
+```{r Age_Control_interaction_no_associate}
+type_AgeControl_noAssociate =
+  all_us_combined %>% 
+  filter(Type != "Associate") %>% 
+  make_clm("Type", vars %>% c(., "Age:Control"))
+type_AgeControl_noAssociate %>% summary()
+
+type_noAssociate =
+  all_us_combined %>% 
+  filter(Type != "Associate") %>% 
+  make_clm("Type", vars)
+
+anova(type_AgeControl_noAssociate, type_noAssociate) %>% print()
+```  
+
+We find that the Age/Control interaction still holds the same pattern and is still significant. Thus, the interaction was not just the result of these young, public Associate schools.  
+
+For the US News Type dataset, we see that Age/Control interaction is significant as well. We find a similar pattern. Public schools start out with higher probabilities for lower-level types, but overtake Private schools in 96 years.  
+
+We would like to further investigate the nature of this Age/Control interaction. Consider the graph below. We can see that in the area at which Age is greater than 200 years, there is a clear divide between better ranked Private schools and worse ranked Public schools. We perform a regression on data, splitting the data between schools with Age greater than or less than 200 years, in order to examine whether these two subsets of the data behave by different rules.  
+
+```{r Age_Rank_Control_vis}
+get_usnews("national") %>% 
+  filter(!is.na(log_rank)) %>% 
+  mutate(Rank_fac = Rank_fac %>% fct_rev()) %>% 
+  ggplot(aes(Age, Rank_fac, group = Control, color = Control)) + 
+  geom_jitter(height = .3)
+```  
+ 
+
+
+```{r nat_Age_200_subset}
+cat("Regression on National University for Age < 200\n")
+get_usnews("national") %>% 
+  filter(Age < 200) %>% 
+  make_clm(y_var, vars) %>% 
+  summary()
+
+cat("Regression on National University for Age >= 200\n")
+get_usnews("national") %>% 
+  filter(Age >= 200) %>% 
+  make_clm(y_var, vars) %>% 
+  summary()
+```
+ 
+We find that the negative correlation of Control=Public that we found in the base model is no longer significant in the Age >= 200 subset, but is even more significant and strong in the Age < 200 subset. We also find that in the Age >= 200 subset, population is no longer significant, and neither is religious status.  
+
+In addition, whereas the Age < 200 subset displays a significant and clear ordering that Large City is better than Small City, which is better than Rural/Town, the Age >= 200 subset finds that Large City and Rural/Town don't have a significant difference, but Small City is significantly better. A possible interpretation of the change in association of Locale is the that oldest schools benefit from the image of a small-town, high-status college campus, while the rest of the schools follow the traditional hierarchy of favoring more resources, opportunities, etc. 
+
+```{r}
+# all_us_combined %>% 
+#   ggplot(aes(Type, fill = Control, group = Control)) +
+#   geom_bar(position = position_dodge())
+# 
+# all_us_combined %>% 
+#   ggplot(aes(Type, fill = Locale, group = Locale)) +
+#   geom_bar(position = position_dodge())
+```
+
+```{r}
+# all_us_combined %>% 
+#   ggplot(aes(Type, fill = SpecialPurpose, group = SpecialPurpose)) +
+#   geom_bar(position = position_dodge())
+
+
+# make_clm(all_us_combined %>% filter(Age > 150), "Type", vars) %>% 
+#   summary()
+# 
+# make_clm(all_us_combined %>% filter(Age <= 150), "Type", vars) %>% 
+#   summary()
+# 
+# make_clm(all_us_combined %>% filter(Age > 150), "usnews_type", vars) %>% 
+#   summary()
+# 
+# make_clm(all_us_combined %>% filter(Age <= 150), "usnews_type", vars) %>% 
+#   summary()
+# 
+# all_us_combined %>% filter(Age > 150) %>% 
+#   ggplot(aes(Age, Type, color = Control)) +
+#   geom_jitter(height = .3)
+# 
+# all_us_combined %>% filter(Age <= 150) %>% 
+#   ggplot(aes(Age, Type, color = Control)) +
+#   geom_jitter(height = .3)
+# 
+# all_us_combined %>% filter(Age <= 150) %>% 
+#   ggplot(aes(Age, Type)) +
+#   geom_boxplot()
+# 
+# all_us_combined %>% filter(Age > 150) %>% 
+#   ggplot(aes(Age, usnews_type, color = Control)) +
+#   geom_jitter(height = .3)
+# 
+# all_us_combined %>% 
+#   ggplot(aes(Age, usnews_type, color = Control)) +
+#   geom_jitter(height = .3)
+# 
+# all_us_combined %>% 
+#   ggplot(aes(Age, usnews_type, color = Control)) +
+#   geom_boxplot()
+# 
+# all_us_combined %>% 
+#   ggplot(aes(Age, Control, color = Control)) +
+#   geom_boxplot() +
+#   geom_jitter(height = .3)
+# 
+# lm(Age ~ Control, data = all_us_combined) %>% summary()
+# t.test(all_us_combined %>% filter(Control == "Public") %>% pull(Age),
+#        all_us_combined %>% filter(Control == "Private") %>% pull(Age))
+```  
+
+We see that Control = Public ceases to become significant in the Age <= 200 subset, just as it is in all other datasets. However, it becomes even more significant in the Age > 200 subset. Thus, we hypothesize that Control has a strong interaction with Age. Specifically, Control becomes more relevant as Age increases, in the direction of Control = Positive having a negative effect on rank.  
+
+#### Control/At Capital Interaction Analysis  
+
+We also wish to test our hypothesis that Public schools benefit more from being at the capital than do Private schools. We add the interaction effect between Control and at_capital to the base model, and fit to all datasets. We find that this interaction is not significant for all datasets. In fact, under this model at_capital itself is only significant for one of these datasets, Regional University North, suggesting that not only is there no difference in the benefit of being at the capital between Private and Public schools, but there is not significant evidence of a benefit at all.  
+
+```{r Control_at_capital_interaction}
+commandArgs = function(trailingOnly=T) c("print_coef", "clm", "add=at_capital:Control")
+control_atcap_table = source("code/coef.R")[[1]]
+control_atcap_table %>% print_school_list_table()
+```  
+
+
+In the model without interaction, at_capital is significant for the National University, Regional University North, and Regional University South. The variable has a positive correlation with rank for the first of these two datasets, but Regional University South reverses this trend with a negative correlation with rank. In fact, the coefficients follow a pattern: all the datasets have at_capital positive correlated with rank, except for the Southern region schools. One thing to note about the Southern datasets is that they include the island territory schools. Regional University South contains 13 Puerto Rican schools (and one from the Virgin Islands), and Regional College South contains 15 Puerto Rican schools. Additionally, note that these are the only schools in their dataset for which OffMainland is true, and that these OffMainland schools are disproportionately at the capital (likely due to their smaller area or perhaps the capital is much more developed than the other areas). For Regional University South, 9/14 = 64% of OffMainland schools are at the capital, while 17/136 = 13% of schools in the dataset are at the capital. Similarly, for Regional College South, 5/15 = 33% of OffMainland schools are at the capital, while 17/132 = 13% of schools in the dataset are at the capital. Since, these off mainland schools are worse ranked than average, this might explain the negative correlation with being at the capital.   
+
+```{r South_at_cap_offmainland_ranks_vis, out.width="50%", out.height="50%", fig.width=4, fig.height=4}
+reguni_south = 
+  get_all_usnews %>% 
+  filter(list_name == "reguni_south") %>% 
+  pull(school_data) %>% .[[1]] %>% 
+  filter(!is.na(Rank_fac))
+
+regcol_south = 
+  get_all_usnews %>% 
+  filter(list_name == "regcol_south") %>% 
+  pull(school_data) %>% .[[1]] %>% 
+  filter(!is.na(Rank_fac))
+
+reguni_south %>% 
+  ggplot(aes(x = OffMainland, y = Rank_fac, color = at_capital)) +
+  geom_jitter(height = .2) +
+  labs(subtitle = "Dataset: Regional University South")
+regcol_south %>% 
+  ggplot(aes(x = OffMainland, y = Rank_fac, color = at_capital)) +
+  geom_jitter(height = .2) +
+  labs(subtitle = "Dataset: Regional College South")
+
+```  
+
+Thus, there is possible confounding between being off the mainland and being at the capital, since territories have smaller areas. We then seek to find whether at_capital does have a negative correlation with rank for the Southern datasets, or if it is due to confounding with being off the mainland. After we run regressions for the two datasets on only schools that are on the mainland, and on only schools that are off the mainland, we find that at_capital is still negatively correlated with rank.  
+
+```{r South_at_cap_regression}
+var_no_OM = vars %>% discard(~.x == "OffMainland")
+
+cat("Regional University South, off mainland\n")
+clm(Rank_fac ~ at_capital + Age, data = reguni_south %>% filter(OffMainland == T)) %>% 
+  summary()
+
+cat("Regional University South, on mainland\n")
+make_clm(reguni_south %>% filter(OffMainland == F), y_var, var_no_OM) %>% 
+  summary()
+
+cat("Regional College South, off mainland\n")
+make_clm(regcol_south %>% filter(OffMainland == T), y_var, var_no_OM) %>% 
+  summary()
+
+cat("Regional College South, on mainland\n")
+make_clm(regcol_south %>% filter(OffMainland == F), y_var, var_no_OM) %>% 
+  summary()
+```  
+
+We wish to pursue this phenomenon further. We take the subset of national schools that are in the South (note: this is Florida, South Carolina, North Carolina, Georgia, Virginia, West Virginia, Alabama, Tennessee, Kentucky, Louisiana, Arkansas, Missouri, Puerto Rico, the Virgin Islands). We find that, whereas at_capital was previously positively correlated with rank, it is now negatively correlated, albeit not significant.  
+
+This trend, however, does not continue with the Liberal Arts dataset. After subsetting the Southern schools and performing a regression, we find that at_capital is positively correlated with rank and not significant, as it was before the subset for Liberal Arts.  
+
+```{r South_at_cap_nat_lib}
+south_states = 
+  bind_rows(reguni_south %>% select(-Rank_fac), 
+            regcol_south %>% select(-Rank_fac)) %>% 
+  pull(State_ab) %>% 
+  unique()
+
+south_national = 
+  nat %>% 
+  filter(State_ab %in% south_states)
+
+make_clm(south_national, y_var, vars) %>% summary()
+
+liberal = 
+  get_all_usnews %>% 
+  filter(list_name == "liberal") %>% 
+  pull(school_data) %>% .[[1]]
+
+south_liberal = 
+  liberal %>% 
+  filter(State_ab %in% south_states)
+
+make_clm(south_liberal, y_var, vars) %>% summary()
+```  
+
+Analysis of Public/Private and being at the capital for other countries would be an interesting area for further research. We note that in Asian, the top universities (Beijing U, Tokyo U, Seoul U) are public and located in the capital.  
+
+#### Outliers  
+
+We now examine the schools which have the highest residual under the base model with Age/Control interaction, in order to see if there any are patterns we can find in the type of school that our model does not do well on. 
+```{r highest_residual_schools}
+nat_clm = 
+  get_usnews("national") %>% 
+  make_clm(y_var, vars %>% c(., "Age:Control"))
+
+get_usnews("national") %>% 
+  add_clm_res(nat_clm) %>% 
+  filter(abs(resid) > 4) %>% 
+  select(School, Rank_fac, pred, Age, Control, pop, is_religious, at_capital, OffMainland, SpecialPurpose, Locale) %>% 
+  print_school_list_table()
+```  
+
+Upon manual inspection, we can identify certain types of schools that the model fails to explain. One group is a set of very young schools that are part of a strong public university system, and thus perform much better than expected given their age. These include UC Santa Cruz and UC Merced, as well as SUNY Stony Brook and SUNY Binghamton. Since these are two of the highest population states in the country, perhaps a larger state means a stronger public school system. We test this by testing for interaction between population and control.  
+
+```{r pop_control_interaction}
+nat_clm = get_usnews("national") %>% make_clm(y_var, vars)
+nat_clm_pop_control = 
+  get_usnews("national") %>% 
+  make_clm(y_var, c(vars, "pop:Control"))
+anova(nat_clm, nat_clm_pop_control)
+```  
+
+Another group is the set of schools that are religiously affiliated and high-ranked. This includes Pepperdine University, American University, and Gonzaga University. Perhaps there is interaction between Age and religious status, wherein among older schools, the correlation between being religious and lower ranks is lessened. However, we find that there is not good evidence for this possibility.   
+
+```{r age_religious_interaction}
+nat_clm_age_rel = 
+  get_usnews("national") %>% 
+  make_clm(y_var, c(vars, "Age:is_religious"))
+anova(nat_clm, nat_clm_age_rel)
+```  
+
+An area of possible future research would be investigating why some schools seem to so strongly buck the trend of being religious correlating with a drastic decrease in ranking.  
+
+### Conclusions  
+
+Age is consistently a very significant and positive predictor of college ranking. It has a negative coefficient and a p-value less than or equal to 0.01 for all datasets except for Regional Colleges Midwest. Additionally, it is a significant and positive predictor of college type. However, we note the interesting phenomenon in which private schools vary little in school type as age changes. We thus conclude Age to be the single most important factor correlating with the prestige of a school. What can a hypothetical person who wishes to found a highly ranked university learn from this? This person will be at a severe disadvantage. The best strategy seems to be having started 400 years ago. The author hypothesizes that this applies to other institutions in which prestige and social standing play a large factor as well. As the proverb says: “The best time to plant a tree was 20 years ago. The second best time is now.”  
+
+It is possible that more successful schools have have a smaller chance of shutting down, and thus prestige does in fact feed into the factor of age (i.e. survivor bias). Investigating school open/closed status as an outcome would be an interesting line of future research to address this consideration. However, if the only interaction between age and prestige was that schools below a certain threshold of some measure of success shut down over time, then we would expect to only see that older ages have less worse ranked schools. However, we see that not only do the older ages have less worst ranked schools, but they also disproportionately contain the outlier high ranked schools. Thus, while we must consider the fact that prestige could affect age, we can be reasonably sure that it is not the sole explanation of the effects of age we have found.  
+
+We find that at_capital is significant and has a positive effect on rank for our most prominent dataset, National University. We also find that there is an interesting trend in which being at the capital in a Southern state can have a negative correlation. Overall, however, at_capital it is not a consistently important factor.  
+
+We find that for all datasets except National University, Control varies in direction and is not significant. Control = Public is significant and negatively correlated with rank in the National University dataset, but we find that almost all of this correlation is contained in the National University subset where Age >= 200. That is, for school rankings, Public vs Private seems not to matter, except for the very oldest of universities.  
+
+Yet for the Carnegie Classification model, this Control=Public is significant and positively correlated with a higher level classification. This is an unexpected reversal of the effect of Control = Public. 
+
+Religious status is extremely significant and negatively correlated with rank for the two most prominent datasets, National University and Liberal Arts. It is also significant and negatively correlated with US News type. One possible consideration is: do the best universities become secular as they grow in reputation, while the less prestigious universities stay religious? In other words, does ranking cause religious status?  
+
+We see that for the National University dataset, Locale=Rural (the comparison level is Locale=LargeCity) has a very significant, negative correlation with rank. The only other dataset with this is Regional University West. LocaleSmallCity is insignificant for most of the datasets, suggesting that the difference between SmallCity and LargeCity is not incredibly big. LocaleRural is a good predictor for the national dataset, but otherwise is not very correlated with rank.  
+
+However, Locale is extremely important in regards to Carnegie Classification and US News type. For both of these models, they exhibit the pattern that LargeCity is better than SmallCity, and Small City is better than Rural, and both the SmallCity and Rural coefficients are extremely significant.  
+
+We may hypothesize that once a school reaches a certain classification or type, the locale makes little difference to their ranking or prestige. But the locale is extremely important in getting to that classification or type in the first place. Perhaps schools created in more urban areas receive larger financial and structural support due to people in urban areas having more resources.  
+
+We find that OffMainland is significant only for Regional University South, where it is negatively correlated with rank, and for the US News type regression, where it is negatively correlated with rank. This stems from the presence of Puerto Rican schools in this dataset, as they are the only schools off the mainland, and they have much lower ranks than average. For all other datasets, we observe it is either not significant, or there are not enough observations.  
+
+SpecialPurpose is a consistent factor for almost all datasets that have sufficient observations. In these datasets, we observe that SpecialPurpose is negatively correlated with the response. This might indicate that it might be best to not give your school a special mission. However, we also observed that SpecialPurpose schools actually performed better when taking into account SAT scores. Thus, having a special mission might actually be an advantageous trait that sets you apart from the competition. This would contradict the possible narrative that HBCU or women’s colleges are ranked unfairly low.  
+
+We observe that state population is significant and positively correlated with rank for our most prominent dataset, National University. We found that this significance was contained only in the subset Age < 200. Although it has similar effects for a few other datasets, it is not an overall very consistent variable.  
+
+We illustrate the relationship we have found between the most important variables below.  
+
+```{r flagship_plot, out.width="100%", fig.height=6, fig.width=6}
+library(patchwork)
+a = get_usnews("national") %>% 
+  filter(!is.na(Rank_fac)) %>% 
+  mutate(Rank_fac = Rank_fac %>% fct_rev()) %>% 
+  ggplot(aes(Age, Rank_fac, color = Control, shape = Locale)) +
+  geom_jitter(width = 0, height = .3) +
+  labs(subtitle = "National Universities")
+b = get_usnews("liberal") %>% 
+  filter(!is.na(Rank_fac)) %>% 
+  mutate(Rank_fac = Rank_fac %>% fct_rev()) %>% 
+  ggplot(aes(Age, Rank_fac, color = Control, shape = Locale)) +
+  geom_jitter(width = 0, height = .3) +
+  labs(subtitle = "Liberal Arts")
+
+a + b + plot_layout(ncol = 1, guides = "collect")
+```  
+
+
+
+
+
